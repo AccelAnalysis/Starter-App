@@ -17,10 +17,6 @@ jobs:
           - starter: data-backed-starter
             test_command: npm run test:rules
 
-    defaults:
-      run:
-        working-directory: ${{ matrix.starter }}
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,7 +27,12 @@ jobs:
           distribution: temurin
           java-version: "21"
       - run: npm install --no-audit --no-fund
+        working-directory: ${{ matrix.starter }}
       - run: npm run lint
+        working-directory: ${{ matrix.starter }}
       - run: npm run typecheck
+        working-directory: ${{ matrix.starter }}
       - run: ${{ matrix.test_command }}
+        working-directory: ${{ matrix.starter }}
       - run: npm run build
+        working-directory: ${{ matrix.starter }}
