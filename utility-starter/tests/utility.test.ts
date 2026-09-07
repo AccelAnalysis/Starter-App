@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { transformItems } from "@/lib/utility";
+import { transformItems } from "../lib/utility";
 
 describe("transformItems", () => {
   it("trims blank lines, filters, deduplicates case-insensitively, and sorts", () => {
