@@ -1,14 +1,9 @@
 {
-  "name": "management-plan-feedback",
-  "version": "0.1.0",
-  "private": true,
+  "name": "management-plan-feedback", "version": "0.1.0", "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run tests/domain.test.ts tests/privacy.test.ts",
+    "dev": "next dev", "build": "next build", "start": "next start", "lint": "eslint .", "typecheck": "tsc --noEmit",
+    "test": "vitest run tests/domain.test.ts tests/regressions.test.ts tests/metrics.test.ts tests/privacy.test.ts",
+    "test:offline": "node scripts/run-domain-offline.mjs",
     "test:rules": "firebase emulators:exec --project demo-management --only auth,firestore \"vitest run tests/security.test.ts\"",
     "test:e2e": "firebase emulators:exec --project demo-management --only auth,firestore \"playwright test\"",
     "emulators": "firebase emulators:start --project demo-management --only auth,firestore",
