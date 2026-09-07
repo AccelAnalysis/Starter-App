@@ -8,13 +8,10 @@ import { auth, firebaseConfigured } from "@/lib/firebase";
 
 export function AuthenticatedWorkspace() {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(auth));
 
   useEffect(() => {
-    if (!auth) {
-      setLoading(false);
-      return;
-    }
+    if (!auth) return;
 
     return onAuthStateChanged(auth, (nextUser) => {
       setUser(nextUser);
