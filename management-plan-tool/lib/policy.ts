@@ -11,7 +11,7 @@ export function readsRef(s: State, a: Member, type: RefType, id: string, depth =
   if (depth > 8) return false;
   if (type === 'plan') { const p = s.plans.find(x => x.id === id); return !!p && readsPlan(s, a, p); }
   if (type === 'expectation') { const e = s.expectations.find(x => x.id === id); return !!e && readsRef(s, a, 'plan', e.planId, depth + 1); }
-  if (type === 'meeting') { const m = s.meetings.find(x => x.id === id); return !!m && readsRef(s, a, 'plan', m.planId, depth + 1) && (a.role === 'admin' || m.participantIds.includes(a.id) || manages(s, a, plan(s, m.planId))); }
+  if (type === 'meeting') { const m = s.meetings.find(x => x.id === id); return !!m && readsRef(s, a, 'plan', m.planId, depth + 1) && s.reviews.some(r => r.meetingId === m.id && readsSensitive(s, a, r)) && (a.role === 'admin' || m.participantIds.includes(a.id) || manages(s, a, plan(s, m.planId))); }
   if (type === 'feedback') { const f = s.feedback.find(x => x.id === id); return !!f && readsSensitive(s, a, f) && readsRef(s, a, f.sourceType, f.sourceId, depth + 1); }
   if (type === 'review') { const r = s.reviews.find(x => x.id === id); return !!r && readsSensitive(s, a, r); }
   if (type === 'decision') { const d = s.decisions.find(x => x.id === id); return !!d && readsSensitive(s, a, d) && readsRef(s, a, 'review', d.reviewId, depth + 1); }
