@@ -1,0 +1,1 @@
+.mobile-session{display:none}.form-grid label,.form-grid select{min-width:0}.form-grid select{max-width:100%}.form-grid label>span{overflow-wrap:anywhere}@media(max-width:820px){.mobile-session{display:inline-flex;position:absolute;z-index:5;top:17px;right:19px;font-size:10px;padding:8px 11px}}@media print{.mobile-session{display:none!important}}
