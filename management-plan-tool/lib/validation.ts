@@ -1,0 +1,9 @@
+import { ensure } from './policy';
+import type { Member, Visibility } from './model';
+export type Payload = Record<string, unknown>;
+export function text(p: Payload, key: string, required = true, max = 3000): string { const value = p[key]; if ((value === undefined || value === '') && !required) return ''; ensure(typeof value === 'string', `${key} must be text.`, 400); const result = value.trim(); ensure((!required || result.length > 0) && result.length <= max, `${key} is required and must be no more than ${max} characters.`, 400); return result; }
+export function choice<T extends string>(p: Payload, key: string, values: readonly T[], fallback?: T): T { const value = p[key] ?? fallback; ensure(typeof value === 'string' && values.includes(value as T), `Choose a valid ${key}.`, 400); return value as T; }
+export function day(p: Payload, key: string, required = true): string { const value = text(p, key, required, 10); if (!value) return ''; ensure(/^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value, `Choose a valid ${key}.`, 400); return value; }
+export function numeric(p: Payload, key: string, fallback = 0): number { const value = Number(p[key] ?? fallback); ensure(Number.isFinite(value) && value >= 0 && value <= 100, `${key} must be between 0 and 100.`, 400); return value; }
+export function ids(p: Payload, key: string): string[] { const value = p[key] ?? []; ensure(Array.isArray(value) && value.length <= 75 && value.every(x => typeof x === 'string'), `${key} must be a list of people.`, 400); return [...new Set(value)] as string[]; }
+export function visibility(p: Payload, a: Member): Visibility { const v = choice(p, 'visibility', ['plan', 'private', 'leadership'] as const, 'private'); ensure(v !== 'leadership' || a.role === 'admin', 'Executive-only records can only be created by an administrator.'); return v; }
