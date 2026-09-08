@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // V2 uses a server-authoritative API. Browser SDKs never read or write
+    // management records directly.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
