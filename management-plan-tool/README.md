@@ -90,8 +90,8 @@ Private notes are visible only to people involved and authorized management. Exe
 - No automatic invitation emails, external notification scheduler, or automatic escalation without a human review decision.
 - Plan scope and participant set are established at creation. Use a new plan for a changed reporting population; revisions preserve purpose, cadence, targets, and expectations.
 - `Update Plan` within review revises the plan purpose with an explicit change summary. Detailed responsibility/KPI edits use Revise in Expectations and preserve their own version.
-- The completed external Build Contract was not located in the starter or Library search. `APP_BRIEF.md` records the sprint scope but does not claim to replace, complete, or satisfy an unseen contract.
+- The standard Build Contract was reconciled before release: development is isolated on a `codex/` branch from the current default branch, the PR remains the release record, security controls are not weakened to pass tests, and all exact-candidate checks must pass before merge. `APP_BRIEF.md` remains the application scope contract.
 
 ## Release status
 
-This source is a release candidate, not evidence of a configured production service. The PR and CI results record executed verification. Production Firebase project selection, credentials, authorized domain, rules deployment, environment-specific acceptance, and the external Build Contract remain release gates until explicitly verified.
+This source is a release candidate until the exact PR head passes its full CI chain and is merged. The PR and CI artifacts are the executed verification record. Production Firebase project selection, credentials, authorized domain, rules deployment, backups/retention/monitoring, and environment-specific multi-user acceptance remain deployment gates before real employee data is entered.
