@@ -1,0 +1,111 @@
+name: Management v2 acceptance
+
+on:
+  push:
+    branches: [main, 'codex/**']
+    paths:
+      - 'management-app-v2/**'
+      - '.github/workflows/management-v2.yml'
+  pull_request:
+    paths:
+      - 'management-app-v2/**'
+      - '.github/workflows/management-v2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    name: V2 app acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: management-app-v2
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install dependencies
+        run: |
+          mkdir -p evidence
+          set -o pipefail
+          npm install --no-audit --no-fund 2>&1 | tee evidence/install.log
+      - name: Diff check
+        run: git diff --check origin/main...HEAD
+      - name: Lint
+        run: set -o pipefail; npm run lint 2>&1 | tee evidence/lint.log
+      - name: Strict TypeScript
+        if: always() && hashFiles('management-app-v2/node_modules/typescript/package.json') != ''
+        run: set -o pipefail; npm run typecheck 2>&1 | tee evidence/typecheck.log
+      - name: Domain and notification tests
+        if: always() && hashFiles('management-app-v2/node_modules/vitest/package.json') != ''
+        run: set -o pipefail; npm test 2>&1 | tee evidence/domain.log
+      - name: Firebase API and security tests
+        if: always() && hashFiles('management-app-v2/node_modules/firebase-tools/package.json') != ''
+        run: set -o pipefail; npm run test:rules 2>&1 | tee evidence/security.log
+      - name: Production build
+        if: always() && hashFiles('management-app-v2/node_modules/next/package.json') != ''
+        run: set -o pipefail; npm run build 2>&1 | tee evidence/build.log
+      - name: Install browser
+        if: always() && hashFiles('management-app-v2/node_modules/@playwright/test/package.json') != ''
+        run: npx playwright install --with-deps chromium
+      - name: Browser acceptance
+        if: always() && hashFiles('management-app-v2/node_modules/@playwright/test/package.json') != ''
+        run: set -o pipefail; npm run test:e2e 2>&1 | tee evidence/browser.log
+      - name: Package source and evidence
+        if: always()
+        run: |
+          zip -qr ../management-app-v2-source.zip . \
+            -x 'node_modules/*' '.next/*' 'playwright-report/*' 'test-results/*' '*debug.log' '.env.local' || true
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: management-v2-${{ github.sha }}
+          path: |
+            management-app-v2-source.zip
+            management-app-v2/evidence/
+            management-app-v2/playwright-report/
+            management-app-v2/test-results/
+          retention-days: 14
+
+  starter-regression:
+    name: Starter regression — ${{ matrix.starter }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - starter: utility-starter
+            test_command: npm test
+          - starter: data-backed-starter
+            test_command: npm run test:rules
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm install --no-audit --no-fund
+        working-directory: ${{ matrix.starter }}
+      - run: npm run lint
+        working-directory: ${{ matrix.starter }}
+      - run: npm run typecheck
+        working-directory: ${{ matrix.starter }}
+      - run: ${{ matrix.test_command }}
+        working-directory: ${{ matrix.starter }}
+      - run: npm run build
+        working-directory: ${{ matrix.starter }}
