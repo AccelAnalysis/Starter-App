@@ -17,7 +17,8 @@ export function services() {
 }
 export interface Identity { uid: string; email: string; name: string }
 export async function authenticate(authorization: string | null): Promise<Identity> {
-  const header = authorization; ensure(header?.startsWith('Bearer '), 'Sign in to continue.', 401); const token = header.slice(7); ensure(token.length > 0 && token.length < 10000, 'Invalid session.', 401);
+  if (!authorization?.startsWith('Bearer ')) throw new DomainError('Sign in to continue.', 401);
+  const token = authorization.slice(7); ensure(token.length > 0 && token.length < 10000, 'Invalid session.', 401);
   try { const decoded = await services().auth.verifyIdToken(token, true); ensure(decoded.email && decoded.email_verified === true, 'Verify your email before entering the workspace.', 403); return { uid: decoded.uid, email: decoded.email.toLowerCase(), name: typeof decoded.name === 'string' ? decoded.name : decoded.email.split('@')[0] }; }
   catch (error) { if (error instanceof DomainError) throw error; throw new DomainError('Your session expired or was revoked. Please sign in again.', 401); }
 }
