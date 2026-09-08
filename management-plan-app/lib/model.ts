@@ -1,0 +1,28 @@
+export type Role = 'admin' | 'manager' | 'employee';
+export type Visibility = 'plan' | 'private' | 'leadership';
+export type Status = 'open' | 'in_progress' | 'waiting' | 'submitted' | 'completed' | 'cancelled';
+export type RefType = 'plan' | 'expectation' | 'feedback' | 'review' | 'meeting' | 'decision' | 'action';
+export interface Member { id: string; uid: string; email: string; name: string; role: Role; teamId: string; jobTitle: string; active: boolean }
+export interface Team { id: string; name: string }
+export interface Plan { id: string; title: string; purpose: string; horizon: string; scope: 'organization' | 'function' | 'individual'; ownerId: string; participantIds: string[]; teamId: string; visibility: 'participants' | 'organization' | 'leadership'; cadence: string; nextReview: string; status: 'active' | 'at_risk' | 'completed'; version: number; createdAt: string; updatedAt: string }
+export interface Expectation { id: string; planId: string; kind: 'responsibility' | 'goal' | 'kpi'; title: string; description: string; ownerId: string; measure: string; target: string; frequency: string; result: string; progress: number; status: 'on_track' | 'at_risk' | 'blocked' | 'complete'; updatedAt: string }
+export interface KPIResult { id: string; expectationId: string; planId: string; result: string; note: string; status: Expectation['status']; authorId: string; at: string }
+export interface PlanVersion { id: string; planId: string; number: number; plan: Plan; expectations: Expectation[]; summary: string; authorId: string; at: string }
+export interface ActionItem { id: string; planId: string; description: string; ownerId: string; dueDate: string; priority: 'low' | 'normal' | 'high'; status: Status; sourceType: RefType; sourceId: string; kpiId: string; followUpId: string; evidence: string; createdAt: string; completedAt: string; completedBy: string; verifiedAt: string; verifiedBy: string; history: { at: string; by: string; status: Status; evidence: string }[] }
+export interface FollowUp { id: string; planId: string; requirement: string; ownerId: string; dueDate: string; nextReview: string; sourceType: RefType; sourceId: string; actionId: string; status: Status; evidence: string; completedAt: string; verifiedBy: string }
+export interface Sensitive { planId: string; visibility: Visibility; authorId: string; recipientId: string; subjectId: string }
+export interface Feedback extends Sensitive { id: string; category: string; text: string; sourceType: RefType; sourceId: string; responseRequired: boolean; responseDue: string; status: 'submitted' | 'acknowledged' | 'reviewed' | 'follow_up_required' | 'resolved'; response: string; respondedAt: string; respondedBy: string; actionIds: string[]; createdAt: string; history: { at: string; by: string; text: string; status: string }[] }
+export interface Meeting { id: string; planId: string; title: string; kind: string; cadence: string; participantIds: string[]; agenda: string }
+export interface Review extends Sensitive { id: string; meetingId: string; scheduledFor: string; status: 'scheduled' | 'completed' | 'cancelled'; cancelledAt?: string; cancelledBy?: string; cancellationReason?: string; notes: string; outcome: 'no_change' | 'update_plan' | 'follow_up' | 'escalation' | ''; nextReview: string; decisionId: string; completedAt: string; sheet: { expectationIds: string[]; feedbackIds: string[]; actionIds: string[]; followUpIds: string[] } }
+export interface Decision extends Sensitive { id: string; reviewId: string; text: string; outcome: Review['outcome']; followUpId: string; at: string }
+export interface Acknowledgement { id: string; planId: string; versionId: string; userId: string; acknowledgedAt: string }
+export interface Notification { id: string; userId: string; planId: string; text: string; createdAt: string; readAt: string }
+export interface AuditEvent { id: string; at: string; actorId: string; type: string; targetId: string; summary: string }
+export interface State { schema: 1; revision: number; organization: { id: string; name: string; timezone: string }; members: Member[]; teams: Team[]; plans: Plan[]; expectations: Expectation[]; results: KPIResult[]; versions: PlanVersion[]; actions: ActionItem[]; followUps: FollowUp[]; feedback: Feedback[]; meetings: Meeting[]; reviews: Review[]; decisions: Decision[]; acknowledgements: Acknowledgement[]; notifications: Notification[]; audit: AuditEvent[] }
+export interface View extends Omit<State, 'members'> { me: Member; members: Member[]; directory: { id: string; name: string; jobTitle: string }[]; archivedReviews: Review[] }
+export interface Command { type: string; payload: Record<string, unknown> }
+export const feedbackCategories = ['Progress Update', 'Question', 'Concern / Blocker', 'Suggestion', 'Manager Feedback', 'Employee Feedback', 'Recognition', 'Support Needed'];
+export const closed = (status: string) => status === 'completed' || status === 'cancelled';
+export const overdue = (status: string, due: string, today: string) => !closed(status) && Boolean(due) && due < today;
+export function todayInZone(zone = 'America/New_York', at = new Date()): string { return new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(at); }
+export function emptyState(id: string, name: string): State { return { schema: 1, revision: 0, organization: { id, name, timezone: 'America/New_York' }, members: [], teams: [], plans: [], expectations: [], results: [], versions: [], actions: [], followUps: [], feedback: [], meetings: [], reviews: [], decisions: [], acknowledgements: [], notifications: [], audit: [] }; }

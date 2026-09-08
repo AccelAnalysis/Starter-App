@@ -1,0 +1,127 @@
+name: Management plan rebuild verification
+
+on:
+  push:
+    branches: [main, 'codex/**']
+    paths:
+      - 'management-plan-app/**'
+      - '.github/workflows/management-plan-rebuild.yml'
+  pull_request:
+    paths:
+      - 'management-plan-app/**'
+      - '.github/workflows/management-plan-rebuild.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  app-acceptance:
+    name: App acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: management-plan-app
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install dependencies
+        run: |
+          mkdir -p evidence
+          set -o pipefail
+          npm install --no-audit --no-fund 2>&1 | tee evidence/install.log
+
+      - name: Static — diff check
+        run: git diff --check origin/main...HEAD
+
+      - name: Static — lint
+        run: set -o pipefail; npm run lint 2>&1 | tee evidence/lint.log
+
+      - name: Static — strict TypeScript
+        if: always() && hashFiles('management-plan-app/node_modules/typescript/package.json') != ''
+        run: set -o pipefail; npm run typecheck 2>&1 | tee evidence/typecheck.log
+
+      - name: Domain — lifecycle, metrics, privacy regressions
+        if: always() && hashFiles('management-plan-app/node_modules/vitest/package.json') != ''
+        run: set -o pipefail; npm test 2>&1 | tee evidence/domain.log
+
+      - name: Authorization — Firebase API and rules
+        if: always() && hashFiles('management-plan-app/node_modules/firebase-tools/package.json') != ''
+        run: set -o pipefail; npm run test:rules 2>&1 | tee evidence/security.log
+
+      - name: Static — production build
+        if: always() && hashFiles('management-plan-app/node_modules/next/package.json') != ''
+        run: set -o pipefail; npm run build 2>&1 | tee evidence/build.log
+
+      - name: Browser — install Chromium
+        if: always() && hashFiles('management-plan-app/node_modules/@playwright/test/package.json') != ''
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser — acceptance
+        if: always() && hashFiles('management-plan-app/node_modules/@playwright/test/package.json') != ''
+        run: set -o pipefail; npm run test:e2e 2>&1 | tee evidence/browser.log
+
+      - name: Package source and results
+        if: always()
+        run: |
+          zip -qr ../management-plan-app-source.zip . \
+            -x 'node_modules/*' '.next/*' 'playwright-report/*' 'test-results/*' '*debug.log' '.env.local' || true
+
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: management-plan-rebuild-${{ github.sha }}
+          path: |
+            management-plan-app-source.zip
+            management-plan-app/evidence/
+            management-plan-app/playwright-report/
+            management-plan-app/test-results/
+          retention-days: 14
+
+  starter-regression:
+    name: Starter regression — ${{ matrix.starter }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - starter: utility-starter
+            test_command: npm test
+          - starter: data-backed-starter
+            test_command: npm run test:rules
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install
+        run: npm install --no-audit --no-fund
+        working-directory: ${{ matrix.starter }}
+      - name: Lint
+        run: npm run lint
+        working-directory: ${{ matrix.starter }}
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: ${{ matrix.starter }}
+      - name: Tests
+        run: ${{ matrix.test_command }}
+        working-directory: ${{ matrix.starter }}
+      - name: Production build
+        run: npm run build
+        working-directory: ${{ matrix.starter }}
