@@ -23,7 +23,7 @@ This is a **single-organization pilot**, bounded to 75 approved people and 50 pl
 Requires Node.js 22 and Java 21.
 
 ```bash
-cd management-plan-tool
+cd management-plan-app
 npm install
 # Terminal one:
 npm run emulators
