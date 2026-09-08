@@ -5,7 +5,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { NextRequest } from 'next/server';
 import { GET, POST } from '../app/api/workspace/route';
 import { services, workspace } from '../lib/server';
-import { fixture, person, alicePlan } from './fixture';
+import { fixture } from './fixture';
 import { emulatorEnvironment, seed, token, password } from './emulator';
 import type { View } from '../lib/model';
 emulatorEnvironment();
